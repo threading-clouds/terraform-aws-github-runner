@@ -34,6 +34,7 @@ resource "aws_lambda_function" "scale_up" {
       ENABLE_ORGANIZATION_RUNNERS              = var.enable_organization_runners
       ENVIRONMENT                              = var.prefix
       GHES_URL                                 = var.ghes_url
+      USER_AGENT                               = var.user_agent
       INSTANCE_ALLOCATION_STRATEGY             = var.instance_allocation_strategy
       INSTANCE_MAX_SPOT_PRICE                  = var.instance_max_spot_price
       INSTANCE_TARGET_CAPACITY_TYPE            = var.instance_target_capacity_type
@@ -100,7 +101,7 @@ resource "aws_lambda_permission" "scale_runners_lambda" {
 }
 
 resource "aws_iam_role" "scale_up" {
-  name                 = "${var.prefix}-action-scale-up-lambda-role"
+  name                 = "${substr("${var.prefix}-scale-up-lambda", 0, 54)}-${substr(md5("${var.prefix}-scale-up-lambda"), 0, 8)}"
   assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role_policy.json
   path                 = local.role_path
   permissions_boundary = var.role_permissions_boundary
@@ -118,6 +119,7 @@ resource "aws_iam_role_policy" "scale_up" {
     ssm_config_path           = "arn:${var.aws_partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_paths.root}/${var.ssm_paths.config}"
     kms_key_arn               = local.kms_key_arn
     ami_kms_key_arn           = local.ami_kms_key_arn
+    ssm_ami_id_parameter_arn  = local.ami_id_ssm_module_managed ? aws_ssm_parameter.runner_ami_id[0].arn : var.ami.id_ssm_parameter_arn
   })
 }
 

@@ -9,6 +9,7 @@ module "pool" {
       ssl_verify = var.ghes_ssl_verify
       url        = var.ghes_url
     }
+    user_agent                    = var.user_agent
     github_app_parameters         = var.github_app_parameters
     instance_allocation_strategy  = var.instance_allocation_strategy
     instance_max_spot_price       = var.instance_max_spot_price
@@ -16,6 +17,7 @@ module "pool" {
     instance_types                = var.instance_types
     kms_key_arn                   = local.kms_key_arn
     ami_kms_key_arn               = local.ami_kms_key_arn
+    ami_id_ssm_parameter_arn      = local.ami_id_ssm_module_managed ? aws_ssm_parameter.runner_ami_id[0].arn : var.ami.id_ssm_parameter_arn
     lambda = {
       log_level                      = var.log_level
       logging_retention_in_days      = var.logging_retention_in_days

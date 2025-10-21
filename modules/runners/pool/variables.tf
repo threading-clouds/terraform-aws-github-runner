@@ -57,6 +57,7 @@ variable "config" {
     role_permissions_boundary            = string
     kms_key_arn                          = string
     ami_kms_key_arn                      = string
+    ami_id_ssm_parameter_arn             = string
     role_path                            = string
     ssm_token_path                       = string
     ssm_config_path                      = string
@@ -64,6 +65,7 @@ variable "config" {
     ami_id_ssm_parameter_read_policy_arn = string
     arn_ssm_parameters_path_config       = string
     lambda_tags                          = map(string)
+    user_agent                           = string
   })
 }
 

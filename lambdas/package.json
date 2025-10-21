@@ -18,20 +18,33 @@
     "affected:test": "nx affected:test --parallel"
   },
   "resolutions": {
-    "@octokit/types": "^13.0.0"
+    "@octokit/types": "^13.0.0",
+    "brace-expansion": "^2.0.2",
+    "@babel/helpers": "^7.26.10",
+    "@babel/runtime": "^7.26.10"
   },
   "devDependencies": {
-    "@nx/eslint": "19.5.7",
-    "@nx/jest": "19.5.4",
-    "@nx/js": "^20.0.0",
-    "@swc-node/register": "~1.10.9",
-    "@swc/core": "~1.7.22",
-    "@swc/helpers": "~0.5.12",
-    "eslint": "^8.57.0",
-    "jest": "^29.7.0",
-    "nx": "19.5.4",
-    "prettier": "^3.3.3",
-    "typescript": "^5.5.4"
+    "@eslint/eslintrc": "^3.3.1",
+    "@nx/eslint": "21.6.3",
+    "@nx/js": "^21.6.3",
+    "@nx/vite": "^21.6.3",
+    "@swc-node/register": "~1.11.1",
+    "@swc/core": "~1.13.20",
+    "@swc/helpers": "~0.5.17",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.1",
+    "@vitest/coverage-v8": "^3.2.4",
+    "chalk": "^5.6.2",
+    "eslint": "^9.37.0",
+    "eslint-plugin-prettier": "5.5.4",
+    "nx": "21.6.5",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
   },
   "packageManager": "yarn@4.3.1"
 }

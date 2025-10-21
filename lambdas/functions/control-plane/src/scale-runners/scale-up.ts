@@ -4,7 +4,7 @@ import { getParameter, putParameter } from '@aws-github-runner/aws-ssm-util';
 import yn from 'yn';
 
 import { createGithubAppAuth, createGithubInstallationAuth, createOctokitClient } from '../github/auth';
-import { createRunner, listEC2Runners } from './../aws/runners';
+import { createRunner, listEC2Runners, tag } from './../aws/runners';
 import { RunnerInputParameters } from './../aws/runners.d';
 import ScaleError from './ScaleError';
 import { publishRetryMessage } from './job-retry';
@@ -148,6 +148,7 @@ export async function isJobQueued(githubInstallationClient: Octokit, payload: Ac
     });
     metricGitHubAppRateLimit(jobForWorkflowRun.headers);
     isQueued = jobForWorkflowRun.data.status === 'queued';
+    logger.debug(`The job ${payload.id} is${isQueued ? ' ' : 'not'} queued`);
   } else {
     throw Error(`Event ${payload.eventType} is not supported`);
   }
@@ -354,8 +355,17 @@ export function getGitHubEnterpriseApiUrl() {
   const ghesBaseUrl = process.env.GHES_URL;
   let ghesApiUrl = '';
   if (ghesBaseUrl) {
-    ghesApiUrl = `${ghesBaseUrl}/api/v3`;
+    const url = new URL(ghesBaseUrl);
+    const domain = url.hostname;
+    if (domain.endsWith('.ghe.com')) {
+      // Data residency: Prepend 'api.'
+      ghesApiUrl = `https://api.${domain}`;
+    } else {
+      // GitHub Enterprise Server: Append '/api/v3'
+      ghesApiUrl = `${ghesBaseUrl}/api/v3`;
+    }
   }
+  logger.debug(`Github Enterprise URLs: api_url - ${ghesApiUrl}; base_url - ${ghesBaseUrl}`);
   return { ghesApiUrl, ghesBaseUrl };
 }
 
@@ -406,6 +416,14 @@ async function createRegistrationTokenConfig(
   }
 }
 
+async function tagRunnerId(instanceId: string, runnerId: string): Promise<void> {
+  try {
+    await tag(instanceId, [{ Key: 'ghr:github_runner_id', Value: runnerId }]);
+  } catch (e) {
+    logger.error(`Failed to mark runner '${instanceId}' with ${runnerId}.`, { error: e });
+  }
+}
+
 async function createJitConfig(githubRunnerConfig: CreateGitHubRunnerConfig, instances: string[], ghClient: Octokit) {
   const runnerGroupId = await getRunnerGroupId(githubRunnerConfig, ghClient);
   const { isDelay, delay } = addDelay(instances);
@@ -438,6 +456,9 @@ async function createJitConfig(githubRunnerConfig: CreateGitHubRunnerConfig, ins
           });
 
     metricGitHubAppRateLimit(runnerConfig.headers);
+
+    // tag the EC2 instance with the Github runner id
+    await tagRunnerId(instance, runnerConfig.data.runner.id.toString());
 
     // store jit config in ssm parameter store
     logger.debug('Runner JIT config for ephemeral runner generated.', {

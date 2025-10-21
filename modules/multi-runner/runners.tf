@@ -25,11 +25,11 @@ module "runners" {
   instance_max_spot_price       = each.value.runner_config.instance_max_spot_price
   block_device_mappings         = each.value.runner_config.block_device_mappings
 
-  runner_architecture       = each.value.runner_config.runner_architecture
-  ami_filter                = each.value.runner_config.ami_filter
-  ami_owners                = each.value.runner_config.ami_owners
-  ami_id_ssm_parameter_name = each.value.runner_config.ami_id_ssm_parameter_name
-  ami_kms_key_arn           = each.value.runner_config.ami_kms_key_arn
+  runner_architecture = each.value.runner_config.runner_architecture
+  ami                 = each.value.runner_config.ami
+  ami_filter          = each.value.runner_config.ami_filter
+  ami_owners          = each.value.runner_config.ami_owners
+  ami_kms_key_arn     = each.value.runner_config.ami_kms_key_arn
 
   sqs_build_queue                      = { "arn" : each.value.arn, "url" : each.value.url }
   github_app_parameters                = local.github_app_parameters
@@ -45,7 +45,8 @@ module "runners" {
   scale_down_schedule_expression       = each.value.runner_config.scale_down_schedule_expression
   minimum_running_time_in_minutes      = each.value.runner_config.minimum_running_time_in_minutes
   runner_boot_time_in_minutes          = each.value.runner_config.runner_boot_time_in_minutes
-  runner_labels                        = sort(distinct(concat(["self-hosted", each.value.runner_config.runner_os, each.value.runner_config.runner_architecture], each.value.runner_config.runner_extra_labels)))
+  runner_disable_default_labels        = each.value.runner_config.runner_disable_default_labels
+  runner_labels                        = each.value.runner_config.runner_disable_default_labels ? sort(distinct(each.value.runner_config.runner_extra_labels)) : sort(distinct(concat(["self-hosted", each.value.runner_config.runner_os, each.value.runner_config.runner_architecture], each.value.runner_config.runner_extra_labels)))
   runner_as_root                       = each.value.runner_config.runner_as_root
   runner_run_as                        = each.value.runner_config.runner_run_as
   runners_maximum_count                = each.value.runner_config.runners_maximum_count
@@ -55,6 +56,7 @@ module "runners" {
   runner_additional_security_group_ids = try(coalescelist(each.value.runner_config.runner_additional_security_group_ids, var.runner_additional_security_group_ids), [])
   metadata_options                     = each.value.runner_config.runner_metadata_options
   credit_specification                 = each.value.runner_config.credit_specification
+  cpu_options                          = each.value.runner_config.cpu_options
 
   enable_runner_binaries_syncer    = each.value.runner_config.enable_runner_binaries_syncer
   lambda_s3_bucket                 = var.lambda_s3_bucket
@@ -85,13 +87,15 @@ module "runners" {
   role_path                 = var.role_path
   role_permissions_boundary = var.role_permissions_boundary
 
-  enable_userdata       = each.value.runner_config.enable_userdata
-  userdata_template     = each.value.runner_config.userdata_template
-  userdata_content      = each.value.runner_config.userdata_content
-  userdata_pre_install  = each.value.runner_config.userdata_pre_install
-  userdata_post_install = each.value.runner_config.userdata_post_install
-  key_name              = var.key_name
-  runner_ec2_tags       = each.value.runner_config.runner_ec2_tags
+  enable_userdata           = each.value.runner_config.enable_userdata
+  userdata_template         = each.value.runner_config.userdata_template
+  userdata_content          = each.value.runner_config.userdata_content
+  userdata_pre_install      = each.value.runner_config.userdata_pre_install
+  userdata_post_install     = each.value.runner_config.userdata_post_install
+  runner_hook_job_started   = each.value.runner_config.runner_hook_job_started
+  runner_hook_job_completed = each.value.runner_config.runner_hook_job_completed
+  key_name                  = var.key_name
+  runner_ec2_tags           = each.value.runner_config.runner_ec2_tags
 
   create_service_linked_role_spot = each.value.runner_config.create_service_linked_role_spot
 
@@ -99,6 +103,7 @@ module "runners" {
 
   ghes_url        = var.ghes_url
   ghes_ssl_verify = var.ghes_ssl_verify
+  user_agent      = var.user_agent
 
   kms_key_arn = var.kms_key_arn
 

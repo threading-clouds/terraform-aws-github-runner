@@ -1,3 +1,25 @@
+variable "ami" {
+  description = <<EOT
+AMI configuration for the action runner instances. This object allows you to specify all AMI-related settings in one place.
+
+Parameters:
+- `filter`: Map of lists to filter AMIs by various criteria (e.g., { name = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-*"], state = ["available"] })
+- `owners`: List of AMI owners to limit the search. Common values: ["amazon"], ["self"], or specific AWS account IDs
+- `id_ssm_parameter_name`: Name of an SSM parameter containing the AMI ID. If specified, this overrides the AMI filter
+- `id_ssm_parameter_arn`: ARN of an SSM parameter containing the AMI ID. If specified, this overrides both AMI filter and parameter name
+- `kms_key_arn`: Optional KMS key ARN if the AMI is encrypted with a customer managed key
+
+Defaults to null, in which case the module falls back to individual AMI variables (deprecated).
+EOT
+  type = object({
+    filter               = optional(map(list(string)), { state = ["available"] })
+    owners               = optional(list(string), ["amazon"])
+    id_ssm_parameter_arn = optional(string, null)
+    kms_key_arn          = optional(string, null)
+  })
+  default = null
+}
+
 variable "aws_region" {
   description = "AWS region."
   type        = string
@@ -114,7 +136,7 @@ variable "instance_types" {
 }
 
 variable "ami_filter" {
-  description = "Map of lists used to create the AMI filter for the action runner AMI."
+  description = "[DEPRECATED: Use ami.filter] Map of lists used to create the AMI filter for the action runner AMI."
   type        = map(list(string))
   default     = { state = ["available"] }
   validation {
@@ -125,19 +147,19 @@ variable "ami_filter" {
 }
 
 variable "ami_owners" {
-  description = "The list of owners used to select the AMI of action runner instances."
+  description = "[DEPRECATED: Use ami.owners] The list of owners used to select the AMI of action runner instances."
   type        = list(string)
   default     = ["amazon"]
 }
 
 variable "ami_id_ssm_parameter_name" {
-  description = "Externally managed SSM parameter (of data type aws:ec2:image) that contains the AMI ID to launch runner instances from. Overrides ami_filter"
+  description = "[DEPRECATED: Use ami.id_ssm_parameter_name] Externally managed SSM parameter (of data type aws:ec2:image) that contains the AMI ID to launch runner instances from. Overrides ami_filter"
   type        = string
   default     = null
 }
 
 variable "ami_kms_key_arn" {
-  description = "Optional CMK Key ARN to be used to launch an instance from a shared encrypted AMI"
+  description = "[DEPRECATED: Use ami.kms_key_arn] Optional CMK Key ARN to be used to launch an instance from a shared encrypted AMI"
   type        = string
   default     = null
 }
@@ -168,6 +190,18 @@ variable "userdata_pre_install" {
 
 variable "userdata_post_install" {
   description = "User-data script snippet to insert after GitHub action runner install"
+  type        = string
+  default     = ""
+}
+
+variable "runner_hook_job_started" {
+  description = "Script to be ran in the runner environment at the beginning of every job"
+  type        = string
+  default     = ""
+}
+
+variable "runner_hook_job_completed" {
+  description = "Script to be ran in the runner environment at the end of every job"
   type        = string
   default     = ""
 }
@@ -215,6 +249,12 @@ variable "runner_boot_time_in_minutes" {
   description = "The minimum time for an EC2 runner to boot and register as a runner."
   type        = number
   default     = 5
+}
+
+variable "runner_disable_default_labels" {
+  description = "Disable default labels for the runners (os, architecture and `self-hosted`). If enabled, the runner will only have the extra labels provided in `runner_extra_labels`."
+  type        = bool
+  default     = false
 }
 
 variable "runner_labels" {
@@ -394,7 +434,7 @@ variable "runner_log_files" {
 }
 
 variable "ghes_url" {
-  description = "GitHub Enterprise Server URL. DO NOT SET IF USING PUBLIC GITHUB"
+  description = "GitHub Enterprise Server URL. DO NOT SET IF USING PUBLIC GITHUB..However if you are using Github Enterprise Cloud with data-residency (ghe.com), set the endpoint here. Example - https://companyname.ghe.com|"
   type        = string
   default     = null
 }
@@ -557,7 +597,7 @@ variable "disable_runner_autoupdate" {
 variable "lambda_runtime" {
   description = "AWS Lambda runtime."
   type        = string
-  default     = "nodejs20.x"
+  default     = "nodejs22.x"
 }
 
 variable "lambda_architecture" {
@@ -620,6 +660,15 @@ variable "credit_specification" {
     condition     = var.credit_specification == null ? true : contains(["standard", "unlimited"], var.credit_specification)
     error_message = "Valid values for credit_specification are (null, \"standard\", \"unlimited\")."
   }
+}
+
+variable "cpu_options" {
+  description = "The CPU options for the instance. See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#cpu-options for details. Note that not all instance types support CPU options, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-optimize-cpu.html#instance-cpu-options"
+  type = object({
+    core_count       = number
+    threads_per_core = number
+  })
+  default = null
 }
 
 variable "enable_jit_config" {
@@ -714,4 +763,10 @@ variable "job_retry" {
     condition     = var.job_retry.enable == false || (var.job_retry.enable == true && var.job_retry.delay_in_seconds <= 900)
     error_message = "The maxium message delay for SWS is 900 seconds."
   }
+}
+
+variable "user_agent" {
+  description = "User agent used for API calls."
+  type        = string
+  default     = null
 }
